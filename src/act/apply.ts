@@ -51,6 +51,17 @@ export async function runAction(plan: ActionPlan, actionsDir: string = defaultAc
           throw new Error(`${pc.path} changed since the plan was built; re-run codeburn optimize --apply`)
         }
       }
+      // Symlink guard: writeFile follows symlinks, so a cloned repo that
+      // commits a config path (e.g. .claude/settings.json) as a symlink
+      // could redirect an edit/create write to an arbitrary file elsewhere
+      // on disk. Refuse up front, before any mutation.
+      for (const pc of plan.changes) {
+        if (pc.op === 'move') continue
+        const st = await lstat(pc.path).catch(() => null)
+        if (st?.isSymbolicLink()) {
+          throw new Error(`${pc.path} is a symlink; refusing to write through it`)
+        }
+      }
       for (let i = 0; i < plan.changes.length; i++) {
         const pc = plan.changes[i]!
         if (pc.op === 'move') {
