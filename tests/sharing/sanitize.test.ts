@@ -24,6 +24,34 @@ function fixture(): MenubarPayload {
       ],
       tools: [{ name: 'Bash', calls: 9 }],
       topSessions: [{ project: 'secret-project', cost: 100, savingsUSD: 0, calls: 5, date: '2026-06-01' }],
+      pullRequests: {
+        rows: [{
+          url: 'https://github.com/secret-org/secret-repo/pull/123',
+          label: 'secret-org/secret-repo#123',
+          cost: 10,
+          savingsUSD: 0,
+          sessions: 1,
+          calls: 2,
+          firstStarted: '2026-06-01T00:00:00.000Z',
+          lastEnded: '2026-06-01T01:00:00.000Z',
+          approx: false,
+          models: ['Opus'],
+        }],
+        distinctCost: 10,
+        distinctSessions: 1,
+        attributedCost: 10,
+        unattributedCost: 0,
+      },
+      byBranch: [
+        { branch: 'secret-branch-name', cost: 10, calls: 2, sessions: 1 },
+      ],
+    },
+    claudeConfigs: {
+      selectedId: 'a',
+      options: [
+        { id: 'a', label: 'Default', path: '/Users/secret-user/.claude' },
+        { id: 'b', label: 'Work', path: '/Users/secret-user/work/.claude' },
+      ],
     },
     history: {
       daily: [],
@@ -57,8 +85,20 @@ describe('sanitizeForSharing', () => {
     expect(clean.history.timeline?.points[0]!.models).toHaveLength(1)
   })
 
-  it('leaks no project name anywhere in the shared payload', () => {
+  it('strips pull requests, branch names, and claude config paths', () => {
     const clean = sanitizeForSharing(fixture())
-    expect(JSON.stringify(clean)).not.toContain('secret-project')
+    expect(clean.current.pullRequests).toBeUndefined()
+    expect(clean.current.byBranch).toBeUndefined()
+    expect(clean.claudeConfigs).toBeUndefined()
+  })
+
+  it('leaks no project name, repo, branch, or local path anywhere in the shared payload', () => {
+    const clean = sanitizeForSharing(fixture())
+    const json = JSON.stringify(clean)
+    expect(json).not.toContain('secret-project')
+    expect(json).not.toContain('secret-org')
+    expect(json).not.toContain('secret-repo')
+    expect(json).not.toContain('secret-branch-name')
+    expect(json).not.toContain('secret-user')
   })
 })
