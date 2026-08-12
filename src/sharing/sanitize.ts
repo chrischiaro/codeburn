@@ -10,10 +10,12 @@ export function sanitizeForSharing(payload: MenubarPayload): MenubarPayload {
   // Older peers may predate the history field even though current producers
   // always include it, so keep the boundary tolerant while sanitizing.
   const timeline = payload.history?.timeline
+  const { pullRequests: _pullRequests, byBranch: _byBranch, ...currentRest } = payload.current
+  const { claudeConfigs: _claudeConfigs, ...payloadRest } = payload
   return {
-    ...payload,
+    ...payloadRest,
     current: {
-      ...payload.current,
+      ...currentRest,
       topProjects: [],
       topSessions: [],
     },
